@@ -54,11 +54,11 @@ jobs:
     runs-on: windows-2025
     steps:
     - name: Cancel Previous Runs
-      uses: styfle/cancel-workflow-action@0.13.0
+      uses: styfle/cancel-workflow-action@0.13.1
       with:
         access_token: ${{ github.token }}
     - name: Clone repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
     - name: Configure workflow
       shell: bash
       env:
@@ -143,7 +143,7 @@ jobs:
 
     - name: Restore ccache files
       id: restore-ccache
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@v6
       with:
         path: ${{ github.workspace }}/.ccache
         key: ${{runner.os}}-${{runner.arch}}-ccache-
@@ -221,7 +221,7 @@ jobs:
         bash ./buildscripts/ci/tools/osuosl/publish.sh -s ${{ secrets.OSUOSL_SSH_ENCRYPT_SECRET }} --os windows -v 4
     - name: Upload artifacts on GitHub
       if: ${{ always() }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.UPLOAD_ARTIFACT_NAME }}
         path: build.artifacts\
@@ -235,7 +235,7 @@ jobs:
         echo "CCACHE_TIMESTAMP=$(date -u +"%F-%T")" | tee -a $GITHUB_OUTPUT
     - name: Save ccache files
       if: always()
-      uses: actions/cache/save@v5
+      uses: actions/cache/save@v6
       with:
         key: ${{ steps.restore-ccache.outputs.cache-primary-key }}${{ steps.prepare-save-ccache.outputs.CCACHE_TIMESTAMP }}
         path: ${{ github.workspace }}/.ccache
@@ -249,11 +249,11 @@ jobs:
     runs-on: windows-2025
     steps:
     - name: Cancel Previous Runs
-      uses: styfle/cancel-workflow-action@0.13.0
+      uses: styfle/cancel-workflow-action@0.13.1
       with:
         access_token: ${{ github.token }}
     - name: Clone repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
     - name: Configure workflow
       shell: bash
       env:
@@ -309,7 +309,7 @@ jobs:
 
     - name: Restore ccache files
       id: restore-ccache
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@v6
       with:
         path: ${{ github.workspace }}/.ccache
         key: ${{runner.os}}-${{runner.arch}}-ccache-
@@ -369,7 +369,7 @@ jobs:
       run: |
         bash ./buildscripts/ci/tools/osuosl/publish.sh -s ${{ secrets.OSUOSL_SSH_ENCRYPT_SECRET }} --os windows -v 4 --arch x86_64
     - name: Upload artifacts on GitHub
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.UPLOAD_ARTIFACT_NAME }}
         path: build.artifacts\
@@ -383,7 +383,7 @@ jobs:
         echo "CCACHE_TIMESTAMP=$(date -u +"%F-%T")" | tee -a $GITHUB_OUTPUT
     - name: Save ccache files
       if: always()
-      uses: actions/cache/save@v5
+      uses: actions/cache/save@v6
       with:
         key: ${{ steps.restore-ccache.outputs.cache-primary-key }}${{ steps.prepare-save-ccache.outputs.CCACHE_TIMESTAMP }}
         path: ${{ github.workspace }}/.ccache
@@ -393,7 +393,7 @@ jobs:
   #   runs-on: windows-2025
   #   steps:
   #   - name: Clone repository
-  #     uses: actions/checkout@v6
+  #     uses: actions/checkout@v7
   #   - name: Sign test
   #     shell: cmd
   #     run: |
