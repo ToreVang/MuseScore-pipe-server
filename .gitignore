@@ -1,0 +1,85 @@
+# Autosave files
+.*,
+*~
+*.autosave
+*.swp
+
+# IDEs
+.idea
+.qtcreator
+.vs
+.vscode/
+
+# build.cmake files
+/build_overrides.cmake
+/builds
+
+# Build output
+build
+build-*
+build.artifacts
+build.debug
+build.install
+build.qtc
+build.release
+build.symbols
+build.tooldata
+build.xcode
+/msvc.*
+
+applebuild
+MuseScorePortable
+win32build
+win32install
+win64build
+win64install
+
+# Local files
+*.local.cmake
+*.user
+.DS_Store
+/buildscripts/cmake/SetupBuildEnvironment.user.cmake
+CMakeLists.txt.user.*
+local_build_revision.env
+
+# CMake User presets
+CMakeUserPresets.json
+
+# Compile commands json
+compile_commands.json
+.cache
+
+# QML language server
+**/.qmlls.ini
+
+# Downloaded dependencies
+**/_deps/*
+
+# Translations
+/share/locale/*placeholder.ts
+/share/locale/*.qm
+
+# Instruments
+/share/instruments/tsv
+
+# Backup Files created by Merging Softwares (Example: Meld)
+*.orig
+
+# Temporary files (vtests)
+temp_*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pdm-python
+
+# Submodules from the main branch
+/muse
+/muse_deps
+
+# Stuff from 3.x builds
+/dependencies
+/mscore/revision.h
+/share/sound/MuseScore_General*
+/VERSION
