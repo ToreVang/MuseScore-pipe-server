@@ -1,0 +1,88 @@
+name: Build pipe-server binaries
+
+on:
+  push:
+    tags: ['pipe-server-v*']
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            asset: mscore-linux-x64.tar.gz
+          - os: windows-2022
+            asset: mscore-windows-x64.zip
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Qt (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          pip3 install aqtinstall
+          aqt install-qt linux desktop 6.10.2 linux_gcc_64 \
+            -m qtshadertools qt5compat qtnetworkauth --outputdir ~/Qt
+          sudo apt-get install -y libgl-dev libopengl-dev libasound2-dev \
+            libfontconfig1-dev libxkbcommon-dev libcups2-dev
+
+      - name: Install Qt (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pip install aqtinstall
+          aqt install-qt windows desktop 6.10.2 win64_msvc2022_64 `
+            -m qtshadertools qt5compat qtnetworkauth --outputdir C:\Qt
+
+      - name: Configure & Build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir build && cd build
+          cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$HOME/Qt/6.10.2/gcc_64/lib/cmake" \
+            -DCMAKE_TOOLCHAIN_FILE="$HOME/Qt/6.10.2/gcc_64/lib/cmake/Qt6/qt.toolchain.cmake" \
+            -DMUSESCORE_BUILD_CONFIGURATION=app -DMUSE_APP_BUILD_MODE=release \
+            -DCMAKE_BUILD_NUMBER=1 -DMUSESCORE_REVISION=${{ github.sha }} \
+            -DMUE_DOWNLOAD_SOUNDFONT=OFF -DMUSE_ENABLE_UNIT_TESTS=OFF \
+            -DMUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT=OFF -DMUSE_MODULE_VST=OFF \
+            -DMUSE_MODULE_NETWORK_WEBSOCKET=OFF -DMUSE_MODULE_AUDIO_PIPEWIRE=OFF \
+            -DMUSE_COMPILE_USE_UNITY=OFF
+          ninja -j$(nproc)
+          # Bundle binary + Qt libs + wrapper script
+          mkdir -p dist/lib dist/plugins/platforms
+          cp build/src/app/mscore dist/
+          cp ~/Qt/6.10.2/gcc_64/lib/libQt6*.so.6 dist/lib/
+          find build/_deps -name "*.so*" -exec cp {} dist/lib/ \; 2>/dev/null || true
+          cp ~/Qt/6.10.2/gcc_64/plugins/platforms/libqoffscreen.so dist/plugins/platforms/
+          cp -r build/share dist/
+          printf '#!/bin/bash\nDIR="$(dirname "$(readlink -f "$0")")"\nLD_LIBRARY_PATH="$DIR/lib" QT_PLUGIN_PATH="$DIR/plugins" QT_QPA_PLATFORM=offscreen exec "$DIR/mscore" "$@"\n' > dist/mscore.sh
+          chmod +x dist/mscore.sh
+          tar -czf ${{ matrix.asset }} -C dist .
+
+      - name: Configure & Build (Windows)
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          mkdir build && cd build
+          cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release ^
+            -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/msvc2022_64/lib/cmake" ^
+            -DCMAKE_TOOLCHAIN_FILE="C:/Qt/6.10.2/msvc2022_64/lib/cmake/Qt6/qt.toolchain.cmake" ^
+            -DMUSESCORE_BUILD_CONFIGURATION=app -DMUSE_APP_BUILD_MODE=release ^
+            -DCMAKE_BUILD_NUMBER=1 -DMUSESCORE_REVISION=${{ github.sha }} ^
+            -DMUE_DOWNLOAD_SOUNDFONT=OFF -DMUSE_ENABLE_UNIT_TESTS=OFF ^
+            -DMUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT=OFF -DMUSE_MODULE_VST=OFF ^
+            -DMUSE_MODULE_NETWORK_WEBSOCKET=OFF -DMUSE_COMPILE_USE_UNITY=OFF
+          ninja
+          mkdir dist
+          copy build\src\app\MuseScore4.exe dist\mscore.exe
+          C:\Qt\6.10.2\msvc2022_64\bin\windeployqt.exe --no-translations dist\mscore.exe
+          powershell Compress-Archive -Path dist\* -DestinationPath ${{ matrix.asset }}
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset }}
+
