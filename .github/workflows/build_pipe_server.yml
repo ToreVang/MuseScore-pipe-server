@@ -4,6 +4,9 @@ on:
   push:
     tags: ['pipe-server-v*']
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
