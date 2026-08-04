@@ -59,10 +59,11 @@ jobs:
           mkdir -p dist/lib dist/plugins/platforms
           cp build/src/app/mscore dist/
           cp ~/Qt/6.10.2/gcc_64/lib/libQt6*.so.6 dist/lib/
+          cp ~/Qt/6.10.2/gcc_64/lib/libicu*.so.* dist/lib/
           find build/_deps -name "*.so*" -exec cp {} dist/lib/ \; 2>/dev/null || true
           cp ~/Qt/6.10.2/gcc_64/plugins/platforms/libqoffscreen.so dist/plugins/platforms/
           cp -r build/share dist/
-          printf '#!/bin/bash\nDIR="$(dirname "$(readlink -f "$0")")"\nLD_LIBRARY_PATH="$DIR/lib" QT_PLUGIN_PATH="$DIR/plugins" QT_QPA_PLATFORM=offscreen exec "$DIR/mscore" "$@"\n' > dist/mscore.sh
+          printf '#!/bin/bash\nDIR="$(dirname "$(readlink -f "$0")")"\nLD_LIBRARY_PATH="$DIR/lib" QT_PLUGIN_PATH="$DIR/plugins" MU_QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORM=offscreen exec "$DIR/mscore" "$@"\n' > dist/mscore.sh
           chmod +x dist/mscore.sh
           tar -czf ${{ matrix.asset }} -C dist .
 
