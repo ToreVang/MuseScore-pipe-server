@@ -22,12 +22,25 @@
 
 #include "consoleapp.h"
 
+#ifndef Q_OS_WIN
 #include <unistd.h>
+#else
+#include <io.h>
+#ifndef STDIN_FILENO
+#define STDIN_FILENO 0
+#endif
+using ssize_t = int;
+static inline ssize_t posix_read(int fd, void* buf, size_t count) { return ::_read(fd, buf, static_cast<unsigned>(count)); }
+#define posix_read_defined
+#endif
+#ifndef posix_read_defined
+static inline ssize_t posix_read(int fd, void* buf, size_t count) { return ::read(fd, buf, count); }
+#endif
 
 #include <QApplication>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QSocketNotifier>
+#include <QThread>
 #ifndef Q_OS_WASM
 #include <QThreadPool>
 #endif
@@ -509,21 +522,14 @@ int ConsoleApp::processConverter(const CmdOptions::ConverterTask& task)
 void ConsoleApp::processPipeServer()
 {
     auto buffer = std::make_shared<QByteArray>();
-    auto* notifier = new QSocketNotifier(STDIN_FILENO, QSocketNotifier::Read, qApp);
 
     fputs("{\"status\":\"ready\"}\n", stdout);
     fflush(stdout);
 
-    QObject::connect(notifier, &QSocketNotifier::activated, qApp, [this, buffer, notifier](int) {
-        notifier->setEnabled(false);
-
-        char tmp[8192];
-        ssize_t n = ::read(STDIN_FILENO, tmp, sizeof(tmp) - 1);
-        if (n <= 0) {
-            qApp->exit(0);
-            return;
-        }
-        buffer->append(tmp, static_cast<int>(n));
+    // Use a background thread to block-read stdin. QSocketNotifier works on Linux
+    // but not on Windows pipes, so a thread is the portable solution.
+    auto processChunk = [this, buffer](const QByteArray& chunk) {
+        buffer->append(chunk);
 
         int idx;
         while ((idx = buffer->indexOf('\n')) >= 0) {
@@ -577,9 +583,22 @@ void ConsoleApp::processPipeServer()
             }
             fflush(stdout);
         }
+    };
 
-        notifier->setEnabled(true);
+    QThread* readerThread = QThread::create([processChunk]() {
+        char tmp[8192];
+        while (true) {
+            ssize_t n = posix_read(STDIN_FILENO, tmp, sizeof(tmp) - 1);
+            if (n <= 0) {
+                QMetaObject::invokeMethod(qApp, []() { qApp->exit(0); }, Qt::QueuedConnection);
+                return;
+            }
+            QByteArray chunk(tmp, static_cast<int>(n));
+            QMetaObject::invokeMethod(qApp, [processChunk, chunk]() { processChunk(chunk); },
+                                      Qt::QueuedConnection);
+        }
     });
+    readerThread->start();
 }
 
 int ConsoleApp::processDiagnostic(const CmdOptions::Diagnostic& task)
