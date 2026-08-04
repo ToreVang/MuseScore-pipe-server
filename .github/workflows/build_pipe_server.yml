@@ -80,7 +80,8 @@ jobs:
             -DCMAKE_BUILD_NUMBER=1 -DMUSESCORE_REVISION=${{ github.sha }} ^
             -DMUE_DOWNLOAD_SOUNDFONT=OFF -DMUSE_ENABLE_UNIT_TESTS=OFF ^
             -DMUSE_MODULE_DIAGNOSTICS_CRASHPAD_CLIENT=OFF -DMUSE_MODULE_VST=OFF ^
-            -DMUSE_MODULE_NETWORK_WEBSOCKET=OFF -DMUSE_COMPILE_USE_UNITY=OFF
+            -DMUSE_MODULE_NETWORK_WEBSOCKET=OFF -DMUSE_COMPILE_USE_UNITY=OFF ^
+            -DMUSE_MODULE_AUDIO_ASIO=OFF
           cmake --build build --config Release
           mkdir dist
           copy build\src\app\mscore.exe dist\mscore.exe
