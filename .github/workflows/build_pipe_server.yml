@@ -84,7 +84,7 @@ jobs:
             -DMUSE_MODULE_AUDIO_ASIO=OFF
           cmake --build build --config Release
           mkdir dist
-          copy build\src\app\mscore.exe dist\mscore.exe
+          copy build\src\app\MuseScore4.exe dist\mscore.exe
           C:\Qt\6.10.2\msvc2022_64\bin\windeployqt.exe --no-translations dist\mscore.exe
           powershell Compress-Archive -Path dist\* -DestinationPath ${{ matrix.asset }}
 
