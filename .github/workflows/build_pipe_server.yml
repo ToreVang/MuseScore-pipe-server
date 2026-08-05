@@ -83,10 +83,19 @@ jobs:
             -DMUSE_MODULE_NETWORK_WEBSOCKET=OFF -DMUSE_COMPILE_USE_UNITY=OFF ^
             -DMUSE_MODULE_AUDIO_ASIO=OFF
           cmake --build build --config Release
-          mkdir dist
-          copy build\src\app\MuseScore4.exe dist\mscore.exe
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Find the built exe (name varies by cmake config: MuseScore4.exe, mscore.exe, etc.)
+          $exe = Get-ChildItem -Path build\src\app -Filter "*.exe" | Select-Object -First 1
+          if (-not $exe) { Write-Error "No .exe found in build\src\app"; exit 1 }
+          Write-Host "Found binary: $($exe.FullName)"
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item $exe.FullName dist\mscore.exe
           C:\Qt\6.10.2\msvc2022_64\bin\windeployqt.exe --no-translations dist\mscore.exe
-          powershell Compress-Archive -Path dist\* -DestinationPath ${{ matrix.asset }}
+          Compress-Archive -Path dist\* -DestinationPath "${{ matrix.asset }}"
 
       - uses: softprops/action-gh-release@v2
         with:
