@@ -88,9 +88,12 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # Exe lands in build.artifacts\ (CMAKE_RUNTIME_OUTPUT_DIRECTORY from SetupBuildEnvironment.cmake)
-          $exe = Get-ChildItem -Path build.artifacts -Filter "*.exe" | Where-Object { $_.Name -notlike "*Tests*" } | Select-Object -First 1
-          if (-not $exe) { Write-Error "No .exe found in build.artifacts"; exit 1 }
+          Write-Host "--- Contents of build\src\app ---"
+          Get-ChildItem -Path build\src\app -ErrorAction SilentlyContinue | Format-Table Name, Length
+          # Search recursively for the main exe (name/location can vary by cmake config)
+          $exe = Get-ChildItem -Path build -Recurse -Filter "MuseScore*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { $exe = Get-ChildItem -Path build -Recurse -Filter "mscore*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1 }
+          if (-not $exe) { Write-Error "No MuseScore/mscore .exe found anywhere under build\"; exit 1 }
           Write-Host "Found binary: $($exe.FullName)"
           New-Item -ItemType Directory -Force dist | Out-Null
           Copy-Item $exe.FullName dist\mscore.exe
